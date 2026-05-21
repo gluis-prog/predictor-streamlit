@@ -3,10 +3,10 @@ import joblib
 import pandas as pd
 import numpy as np
 
-# 1. Configuración de la página con el estilo exacto de tu plantilla
+# 1. Configuración de la página
 st.set_page_config(page_title="Predictor de Valor de Vivienda", page_icon="🏠", layout="centered")
 
-# Inyectamos el CSS personalizado de tu plantilla HTML para cambiar fuentes, tarjetas y colores
+# Inyección de CSS corregida (Se eliminó el error del texto expuesto)
 st.markdown("""
     <style>
     /* Estilos globales */
@@ -25,12 +25,39 @@ st.markdown("""
     }
     
     /* Estilo de las Tarjetas (Cards) */
-    div[data-testid="stForm"] {
+    .custom-card {
         background: white !important;
         border: 1px solid #e5e7eb !important;
         border-radius: 14px !important;
-        padding: 1.5rem !important;
+        padding: 1.25rem 1.5rem !important;
+        margin-bottom: 1rem !important;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+    }
+    
+    .card-label {
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase !important;
+        color: #9ca3af !important;
+        margin-bottom: 1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    /* Diseño del contador estilo plantilla */
+    .counter-display {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: 600;
+        color: #1a1a2e;
+        line-height: 46px;
+        height: 46px;
+        width: 100%;
     }
     
     /* Botón Principal estilo Premium */
@@ -72,7 +99,6 @@ st.markdown("""
     }
     .result-sub { font-size: 12px; color: #6b7280; margin-bottom: 1rem; }
     
-    /* Advertencia */
     .warning-box {
         font-size: 12px; color: #92400e;
         background: #fffbeb; border: 1px solid #fde68a;
@@ -86,16 +112,16 @@ st.markdown("""
 st.title("🏠 Predictor de valor de vivienda")
 st.caption("Ingresa las características de la propiedad para estimar su valor de mercado en dólares (USD).")
 
-# Badges (Etiquetas informativas)
+# Badges
 col_b1, col_b2, _ = st.columns([2.5, 2, 4])
 with col_b1:
     st.markdown('<span style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;">📈 Gradient Boosting · R² 0.81</span>', unsafe_allow_html=True)
 with col_b2:
-    st.markdown('<span style="background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;">☁️ API Local · Interna</span>', unsafe_allow_html=True)
+    st.markdown('<span style="background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;">☁️ API en vivo · Railway</span>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 2. Cargar el modelo y el scaler de manera local en Streamlit
+# 2. Cargar el modelo y el scaler
 @st.cache_resource
 def cargar_modelos():
     modelo = joblib.load("modelo_regresion.pkl")
@@ -107,7 +133,6 @@ try:
 except Exception as e:
     st.error(f"Error al cargar los archivos del modelo: {e}")
 
-# Columnas exactas que el modelo necesita
 FEATURE_COLUMNS = [
     'longitude', 'latitude', 'housing_median_age',
     'total_rooms', 'total_bedrooms', 'population',
@@ -115,52 +140,85 @@ FEATURE_COLUMNS = [
     'rooms_per_household', 'bedrooms_per_room', 'population_per_household'
 ]
 
-# 3. Formulario Único unificando los componentes visuales
-with st.form("main_form", clear_on_submit=False):
-    
-    st.markdown('<div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.5rem;">🏠 Características de la vivienda</div>', unsafe_allow_html=True)
-    
-    # Grid 1: Habitaciones, Dormitorios y Personas (usando selectores numéricos nativos con pasos de 1)
-    g1_c1, g1_c2, g1_c3 = st.columns(3)
-    with g1_c1:
-        rooms_input = st.number_input("Habitaciones", min_value=1, max_value=10000, value=4, step=1, help="En el bloque")
-    with g1_c2:
-        bedrooms_input = st.number_input("Dormitorios", min_value=1, max_value=5000, value=2, step=1, help="En el bloque")
-    with g1_c3:
-        population_input = st.number_input("Personas", min_value=1, max_value=50000, value=3, step=1, help="En el bloque")
-        
-    st.markdown("<hr style='border-top: 1px solid #f3f4f6; margin: 1rem 0;'>", unsafe_allow_html=True)
-    st.markdown('<div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.5rem;">🏘️ Datos del bloque residencial</div>', unsafe_allow_html=True)
-    
-    # Grid 2: Número de hogares y Antigüedad mediana
-    g2_c1, g2_c2 = st.columns(2)
-    with g2_c1:
-        households_input = st.number_input("Número de hogares", min_value=1, max_value=7000, value=499, step=1)
-    with g2_c2:
-        age_input = st.number_input("Antigüedad mediana (años)", min_value=1, max_value=52, value=29, step=1)
+# Inicializar estados para los botones +/- si no existen
+if 'rooms' not in st.session_state: st.session_state.rooms = 4
+if 'bedrooms' not in st.session_state: st.session_state.bedrooms = 2
+if 'population' not in st.session_state: st.session_state.population = 3
 
-    st.markdown("<hr style='border-top: 1px solid #f3f4f6; margin: 1rem 0;'>", unsafe_allow_html=True)
-    st.markdown('<div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.5rem;">💵 Ingreso del vecindario</div>', unsafe_allow_html=True)
-    
-    # Slider interactivo para el Ingreso Mediano
-    income_input = st.slider("Ingreso mediano del hogar (decenas de miles USD)", min_value=0.5, max_value=15.0, value=3.87, step=0.01)
-    equiv_usd = income_input * 10000
-    st.caption(f"Equivale a aproximadamente ${equiv_usd:,.0f} USD anuales por hogar")
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Botón para ejecutar la predicción
-    boton_ejecutar = st.form_submit_button("🧮 Estimar valor de la vivienda")
+# --- TARJETA 1: CARACTERÍSTICAS DE LA VIVIENDA ---
+st.markdown('<div class="custom-card"><div class="card-label">🏠 Características de la vivienda</div>', unsafe_allow_html=True)
 
-# 4. Lógica de Predicción y Visualización de Resultados
+g1_c1, g1_c2, g1_c3 = st.columns(3)
+
+with g1_c1:
+    st.markdown('<label style="font-size: 13px; color: #4b5563; font-weight: 500;">Habitaciones</label>', unsafe_allow_html=True)
+    btn_col1, display_col1, btn_col2 = st.columns([1, 2, 1])
+    with btn_col1: 
+        if st.button("−", key="btn_r_sub"): st.session_state.rooms = max(1, st.session_state.rooms - 1)
+    with display_col1: 
+        st.markdown(f'<div class="counter-display">{st.session_state.rooms}</div>', unsafe_allow_html=True)
+    with btn_col2: 
+        if st.button("+", key="btn_r_add"): st.session_state.rooms += 1
+    st.markdown('<div style="font-size: 11px; color: #9ca3af; text-align: center; margin-top:4px;">en el bloque</div>', unsafe_allow_html=True)
+
+with g1_c2:
+    st.markdown('<label style="font-size: 13px; color: #4b5563; font-weight: 500;">Dormitorios</label>', unsafe_allow_html=True)
+    btn_col3, display_col2, btn_col4 = st.columns([1, 2, 1])
+    with btn_col3: 
+        if st.button("−", key="btn_b_sub"): st.session_state.bedrooms = max(1, st.session_state.bedrooms - 1)
+    with display_col2: 
+        st.markdown(f'<div class="counter-display">{st.session_state.bedrooms}</div>', unsafe_allow_html=True)
+    with btn_col4: 
+        if st.button("+", key="btn_b_add"): st.session_state.bedrooms += 1
+    st.markdown('<div style="font-size: 11px; color: #9ca3af; text-align: center; margin-top:4px;">en el bloque</div>', unsafe_allow_html=True)
+
+with g1_c3:
+    st.markdown('<label style="font-size: 13px; color: #4b5563; font-weight: 500;">Personas</label>', unsafe_allow_html=True)
+    btn_col5, display_col3, btn_col6 = st.columns([1, 2, 1])
+    with btn_col5: 
+        if st.button("−", key="btn_p_sub"): st.session_state.population = max(1, st.session_state.population - 1)
+    with display_col3: 
+        st.markdown(f'<div class="counter-display">{st.session_state.population}</div>', unsafe_allow_html=True)
+    with btn_col6: 
+        if st.button("+", key="btn_p_add"): st.session_state.population += 1
+    st.markdown('<div style="font-size: 11px; color: #9ca3af; text-align: center; margin-top:4px;">en el bloque</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+
+# --- TARJETA 2: DATOS DEL BLOQUE RESIDENCIAL ---
+st.markdown('<div class="custom-card"><div class="card-label">營 Datos del bloque residencial</div>', unsafe_allow_html=True)
+g2_c1, g2_c2 = st.columns(2)
+with g2_c1:
+    households_input = st.number_input("Número de hogares", min_value=1, max_value=7000, value=499, step=1, label_visibility="visible")
+with g2_c2:
+    age_input = st.number_input("Antigüedad mediana (años)", min_value=1, max_value=52, value=29, step=1, label_visibility="visible")
+st.markdown('</div>', unsafe_allow_html=True)
+
+
+# --- TARJETA 3: INGRESO DEL VECINDARIO ---
+st.markdown('<div class="custom-card"><div class="card-label">馃挜 Ingreso del vecindario</div>', unsafe_allow_html=True)
+st.markdown('<label style="font-size: 13px; color: #4b5563; font-weight: 500;">Ingreso mediano del hogar <span style="color:#9ca3af;font-weight:400">(decenas de miles USD)</span></label>', unsafe_allow_html=True)
+income_input = st.slider("", min_value=0.5, max_value=15.0, value=3.87, step=0.01, label_visibility="collapsed")
+equiv_usd = income_input * 10000
+st.markdown(f'<p style="font-size: 12px; color: #9ca3af; margin-top:5px;">Equivale a aproximadamente ${equiv_usd:,.0f} USD anuales por hogar</p>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+
+# Botón de ejecución fuera de formulario para interactuar con los estados correctamente
+boton_ejecutar = st.button("馃 Estimar valor de la vivienda")
+
 if boton_ejecutar:
     try:
-        # Calcular ratios requeridos por el modelo matemático
+        # Recuperar valores de los contadores interactivos
+        rooms_input = st.session_state.rooms
+        bedrooms_input = st.session_state.bedrooms
+        population_input = st.session_state.population
+
         rph = rooms_input / households_input
         bpr = bedrooms_input / rooms_input
         pph = population_input / households_input
 
-        # DataFrame con valores base para Longitud y Latitud neutrales
         entrada = pd.DataFrame([[\
             -119.556526, 35.6177206,
             age_input,
@@ -169,7 +227,6 @@ if boton_ejecutar:
             rph, bpr, pph
         ]], columns=FEATURE_COLUMNS)
 
-        # Escalar datos y ejecutar el modelo de regresión (.pkl)
         entrada_scaled = scaler.transform(entrada)
         prediccion = modelo.predict(entrada_scaled)[0]
 
@@ -224,4 +281,3 @@ if boton_ejecutar:
 
 # Pie de página
 st.markdown("<br><hr style='border-top: 1px solid #e5e7eb;'><div style='text-align: center; font-size: 12px; color: #9ca3af;'>Modelo de Regresión · Dataset California Housing · Desarrollado con FastAPI + Railway</div>", unsafe_allow_html=True)
-    
